@@ -323,6 +323,12 @@ if __name__ == '__main__' :
     if os.path.isfile(label_path):
         print('found %s' % label_path)
         total_ans2label = cPickle.load(open(label_path, 'rb'))
+        # Still need to compute intersection for compute_target
+        df = pd.concat([train_qa_pairs, val_qa_pairs], ignore_index=True)
+        df['answer'] = df['answer'].apply(lambda x: str(x).lower())
+        close_answers = df[df['answer_type']=="CLOSED"]['answer'].unique()
+        open_answers = df[df['answer_type']=="OPEN"]['answer'].unique()
+        intersection = set(close_answers).intersection(set(open_answers))
     else:
         total_ans2label, intersection = create_ans2label(occurence, train_qa_pairs, val_qa_pairs, filename="trainval", root=data)     # create ans2label and label2ans
 

@@ -20,7 +20,7 @@ def create_img2idx(train_json_path, val_json_path, out_json_path):
     val =  pd.DataFrame(data)
     val_en = val[val['q_lang']=="en"]
     img2idx = {}
-    df = train_en.append(val_en)
+    df = pd.concat([train_en, val_en], ignore_index=True)
     df_imgs = df['img_name'].unique().tolist()
 
     for i, row in tqdm(df.iterrows()):
