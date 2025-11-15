@@ -139,7 +139,7 @@ def filter_answers_open_close(train_qa_pairs, val_qa_pairs, min_occurence):
     """
     occurence_open = {}
     occurence_close = {}
-    qa_pairs = train_qa_pairs.append(val_qa_pairs)
+    qa_pairs = pd.concat([train_qa_pairs, val_qa_pairs], ignore_index=True)
     qa_pairs['answer'] = qa_pairs['answer'].apply(lambda x: str(x))
     qa_pairs_open = qa_pairs[qa_pairs['answer_type']=="OPEN"]
     qa_pairs_close = qa_pairs[qa_pairs['answer_type']=="CLOSED"]
@@ -177,7 +177,7 @@ def create_ans2label(occurence, train_qa_pairs, val_qa_pairs, filename="trainval
     name: prefix of the output file
     cache_root: str
     """
-    df = train_qa_pairs.append(val_qa_pairs)
+    df = pd.concat([train_qa_pairs, val_qa_pairs], ignore_index=True)
     df['answer'] = df['answer'].apply(lambda x: str(x).lower())
     close_answers = df[df['answer_type']=="CLOSED"]['answer'].unique()
     open_answers = df[df['answer_type']=="OPEN"]['answer'].unique()
