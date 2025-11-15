@@ -41,7 +41,12 @@ def train(cfg, model, question_model, train_loader, eval_loader, n_unique_close,
     tblog_dir = os.path.join(cfg.OUTPUT_DIR, cfg.NAME, "tensorboardlogs")
     if not os.path.exists(tblog_dir):
         os.makedirs(tblog_dir)
-    writer = SummaryWriter(log_dir=tblog_dir)
+    try:
+        writer = SummaryWriter(log_dir=tblog_dir)
+    except Exception as e:
+        print(f"Warning: Failed to create TensorBoard writer (likely disk space issue): {e}")
+        print("Continuing training without TensorBoard logging...")
+        writer = None
     base_lr = cfg.TRAIN.OPTIMIZER.BASE_LR
     momentum = cfg.TRAIN.OPTIMIZER.MOMENTUM_CNN
     model = model.to(device)
@@ -147,24 +152,46 @@ def train(cfg, model, question_model, train_loader, eval_loader, n_unique_close,
         logger.info('-------[Epoch]:{}-------'.format(epoch))
         logger.info('[Train] Loss:{:.6f} , Train_Acc:{:.6f}%'.format(total_loss, train_score))
         logger.info('[Train] Loss_Open:{:.6f} , Loss_Close:{:.6f}%'.format(total_open_loss, total_close_loss))
-        writer.add_scalar("Loss/train", total_loss, epoch)
-        writer.add_scalar("Loss_Open/train", total_open_loss, epoch)
-        writer.add_scalar("Loss_Close/train", total_close_loss, epoch)
-        writer.add_scalar("Accuracy/train", train_score, epoch)
+        if writer is not None:
+            try:
+                writer.add_scalar("Loss/train", total_loss, epoch)
+                writer.add_scalar("Loss_Open/train", total_open_loss, epoch)
+                writer.add_scalar("Loss_Close/train", total_close_loss, epoch)
+                writer.add_scalar("Accuracy/train", train_score, epoch)
+            except Exception as e:
+                logger.warning(f"Failed to write to TensorBoard: {e}")
 
         # Evaluation
         if eval_loader is not None:
             eval_score, open_score, close_score = evaluate_classifier(model,question_model, eval_loader, cfg, n_unique_close, device, logger)
             if eval_score > best_eval_score:
+                # Delete old best checkpoint to save disk space
+                old_checkpoint = os.path.join(ckpt_path, '{}_best.pth'.format(best_epoch))
+                if os.path.exists(old_checkpoint):
+                    try:
+                        os.remove(old_checkpoint)
+                        logger.info(f'Removed old checkpoint: {old_checkpoint}')
+                    except Exception as e:
+                        logger.warning(f'Failed to remove old checkpoint: {e}')
+                
                 best_eval_score = eval_score
                 best_epoch = epoch
                 # Save the best acc epoch
                 model_path = os.path.join(ckpt_path, '{}_best.pth'.format(best_epoch))
-                utils.save_model(model_path, model, best_epoch, eval_score, open_score, close_score, optim)
+                try:
+                    utils.save_model(model_path, model, best_epoch, eval_score, open_score, close_score, optim)
+                    logger.info(f'Saved new best checkpoint at epoch {best_epoch}')
+                except RuntimeError as e:
+                    logger.error(f'Failed to save checkpoint (likely disk space issue): {e}')
+                    logger.info('Continuing training without saving checkpoint...')
             logger.info('[Result] The best acc is {:.6f}% at epoch {}'.format(best_eval_score, best_epoch))
-            writer.add_scalar("Accuracy/val", eval_score, epoch)
-            writer.add_scalar("Accuracy/val/open", open_score, epoch)
-            writer.add_scalar("Accuracy/val/close", close_score, epoch)
+            if writer is not None:
+                try:
+                    writer.add_scalar("Accuracy/val", eval_score, epoch)
+                    writer.add_scalar("Accuracy/val/open", open_score, epoch)
+                    writer.add_scalar("Accuracy/val/close", close_score, epoch)
+                except Exception as e:
+                    logger.warning(f"Failed to write to TensorBoard: {e}")
 
         
 # Evaluation
