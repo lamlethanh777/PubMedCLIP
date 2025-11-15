@@ -18,7 +18,11 @@ import functools
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch._six import string_classes
+try:
+    from torch._six import string_classes
+except ImportError:
+    # torch._six was removed in newer PyTorch versions
+    string_classes = str
 from torch.utils.data.dataloader import default_collate
 import logging
 from utils.create_dictionary import Dictionary
