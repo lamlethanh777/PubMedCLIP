@@ -150,8 +150,8 @@ def _load_dataset(dataroot, name, img_id2val, label2ans):
     entries = []
     for sample, answer in zip(samples, answers):
         utils.assert_eq(sample['qid'], answer['qid'])
+        print(sample['image_name'], answer['image_name'])
         utils.assert_eq(sample['image_name'], answer['image_name'])
-        print(sample['qid'])
         img_id = sample['image_name']
         if not COUNTING_ONLY or is_howmany(sample['question'], answer, label2ans):
             entries.append(_create_entry(img_id2val[img_id], sample, answer))
