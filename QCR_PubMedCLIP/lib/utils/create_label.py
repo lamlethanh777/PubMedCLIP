@@ -117,7 +117,7 @@ def filter_answers(train_qa_pairs, val_qa_pairs, min_occurence):
     """This will change the answer to preprocessed version
     """
     occurence = {}
-    qa_pairs = train_qa_pairs.append(val_qa_pairs)
+    qa_pairs = pd.concat([train_qa_pairs, val_qa_pairs], ignore_index=True)
     qa_pairs['answer'] = qa_pairs['answer'].apply(lambda x: str(x))
 
     for id, row in qa_pairs.iterrows(): # row:[id,ques,ans]
